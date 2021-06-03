@@ -1,0 +1,181 @@
+---
+title: "M1_Data Assignment"
+author: "Melvin Wayne Abraham"
+date: "1/17/2021"
+output: pdf_document
+---
+### Objective: 
+"You will clean the data by correcting for missing values and outliers.
+
+Download and use the Moneyball data set for this assignment.
+
+We will use the Moneyball data set again in the next module—so everything you learn and explore about the data set in this module will directly help you in the next module! The only thing you are missing is the number of wins, which will be included next week as the response variable."
+
+## 1 Setup and Deliverables
+
+```{r}
+#Clean Rstudio Environment and Import data from Excel
+rm(list = ls())
+
+setwd(
+"C:/Users/Melvin/Documents/William and Mary/Courses/Spring 2021/BUAD 5122 Machine Learning I/Module 1")
+moneyballdata <- read.csv("Moneyball_Data.csv")
+
+library(lubridate)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(lattice)
+```
+
+## 2 Create numerical categories for all of the values being defined below and verify with a str and summary:
+
+```{r Creating values for dataframes}
+moneyballdata$TEAM_BATTING_H = as.numeric(moneyballdata$TEAM_BATTING_H)
+moneyballdata$TEAM_BATTING_2B = as.numeric(moneyballdata$TEAM_BATTING_2B)
+moneyballdata$TEAM_BATTING_3B = as.numeric(moneyballdata$TEAM_BATTING_3B)
+moneyballdata$TEAM_BATTING_HR = as.numeric(moneyballdata$TEAM_BATTING_HR)
+moneyballdata$TEAM_BATTING_BB = as.numeric(moneyballdata$TEAM_BATTING_BB)
+moneyballdata$TEAM_BATTING_HBP = as.numeric(moneyballdata$TEAM_BATTING_HBP)
+moneyballdata$TEAM_BATTING_SO = as.numeric(moneyballdata$TEAM_BATTING_SO)
+moneyballdata$TEAM_BASERUN_SB = as.numeric(moneyballdata$TEAM_BASERUN_SB)
+moneyballdata$TEAM_BASERUN_CS = as.numeric(moneyballdata$TEAM_BASERUN_CS)
+moneyballdata$TEAM_FIELDING_E = as.numeric(moneyballdata$TEAM_FIELDING_E)
+moneyballdata$TEAM_FIELDING_DP = as.numeric(moneyballdata$TEAM_FIELDING_DP)
+moneyballdata$TEAM_PITCHING_BB = as.numeric(moneyballdata$TEAM_PITCHING_BB)
+moneyballdata$TEAM_PITCHING_H = as.numeric(moneyballdata$TEAM_PITCHING_H)
+moneyballdata$TEAM_PITCHING_HR = as.numeric(moneyballdata$TEAM_PITCHING_HR)
+moneyballdata$TEAM_PITCHING_SO = as.numeric(moneyballdata$TEAM_PITCHING_SO)
+
+str(moneyballdata)
+
+summary(moneyballdata)
+
+```
+
+
+## 3 First I found the NA values, converted them to zero and then assigned the median value from the median batters hit by pitch(HBP) to those NA variables and created another column and graph showing the update:
+
+```{r, Batters Hit By Pitch (Get a free base)}
+#Batters Hit by Pitch(get a free base) First we found the NA values(Free Base), converted them to zero and then assigned COMPLETE
+#the median value from the median batters hit by pitch(HBP) to the NA variables and created another graph
+boxplot(moneyballdata$TEAM_BATTING_HBP, col = "blue", main = "Boxplot of Batters hit by Pitch(get a free base)")
+moneyballdata$FreeBase <- as.factor(ifelse(is.na(moneyballdata$TEAM_BATTING_HBP), 0, 1))
+moneyballdata$TEAM_BATTING_HBP[is.na(moneyballdata$TEAM_BATTING_HBP)] = median(moneyballdata$TEAM_BATTING_HBP, na.rm = TRUE)
+
+#New Chart with NA values showing median value of 58 with max of 95 and min of 29
+plot(moneyballdata$TEAM_BATTING_HBP, xlab = "Team Number", ylab = "Batters Hit by Pitch (Free Base)",
+     main = "Batters Hit by Pitch(Free Bases)")
+abline(h=max(moneyballdata$TEAM_BATTING_HBP),col="green")
+text(x = 80, y= (max(moneyballdata$TEAM_BATTING_HBP) - 2), label = "Max Bases", col="green")
+
+
+```
+
+## 4 First I defined our original graph as Bi-Modal Distrubtion, found the NA values, converted them to zero and then assigned the median value from the median strikeouts by batters to those NA variables and created another column(FlagStrikeoutsbyBatters) and graph showing the update:
+
+
+```{r, Strikeouts by batters}
+#Strikeouts by batters (Bi-Modal distribution)
+hist(moneyballdata$TEAM_BATTING_SO, col="pink", xlab= "Number of Strikeouts", main = "Total Number of Strikeouts" )
+moneyballdata$FlagStrikeoutsbyBatters = as.factor(ifelse(is.na(moneyballdata$TEAM_BATTING_SO), 0, 1))
+moneyballdata$TEAM_BATTING_SO[is.na(moneyballdata$TEAM_BATTING_SO)] = median(moneyballdata$TEAM_BATTING_SO, na.rm = TRUE)
+
+#New Chart still displays the bi-modal distribution but we can see a pattern in the number of strikeouts
+hist(moneyballdata$TEAM_BATTING_SO, col="pink", xlab= "Number of Strikeouts",
+     main = "Total Number of Strikeouts with Median Average for NA Values")
+abline(v=median(moneyballdata$TEAM_BATTING_SO), col="purple", lwd=2)
+text(x=median(moneyballdata$TEAM_BATTING_SO), y =330, label = "Median Strikeout Value of 750 ", adj =1, cex=1, col="Purple", font=4 )
+```
+
+## 5 First I defined our original graph as Right-Skewed Distrubtion, found the NA values, converted them to zero and then assigned the median value from the median Stolen Bases to those NA variables and created another column(FlagStolenBases).  Then I created a percentile trimming function to group or bin together the outlier values and created another graph showing the update from the trimmed values:
+
+
+```{r, Stolen Bases}
+#Stolen Bases(Right-Skewed Distribution with Outliers)
+hist(moneyballdata$TEAM_BASERUN_SB, col="yellow", xlab="Number of Stolen Bases", main= "Stolen Bases")
+moneyballdata$FlagStolenBases = as.factor(ifelse(is.na(moneyballdata$TEAM_BASERUN_SB), 0, 1))
+moneyballdata$TEAM_BASERUN_SB[is.na(moneyballdata$TEAM_BASERUN_SB)] = median(moneyballdata$TEAM_BASERUN_SB, na.rm = TRUE)
+
+#Percentile Trimming of Stolen Bases
+a = moneyballdata$TEAM_BASERUN_SB
+Percentile_trim = function(a, lb, ub){
+  a[(a > quantile(a, lb)) & (a < quantile(a, ub))]
+}
+
+#New graph showing the histograph as a trimmed value for the outliers
+hist(Percentile_trim(a, 0.01, 0.99),col="yellow", xlab="Number of Stolen Bases", main= "Stolen Bases")
+
+```
+
+## 6 First I defined our original graph as Right-Skewed Distrubtion, found the NA values, converted them to zero and then assigned the median value from the median Stolen Bases to those NA variables and created another column(FlagStolenBases).  Then I created a percentile trimming function to group or bin together the outlier values and created another graph showing the update from the trimmed values:
+
+
+```{r, Caught Stealing}
+
+#Caught Stealing (Right-Skewed Distribution with Outliers)
+hist(moneyballdata$TEAM_BASERUN_CS, col="red", xlab= "Number of Caught Stealing", main= "Caught Stealing Bases", breaks=15)
+moneyballdata$FlagCaughtStealing <- as.factor(ifelse(is.na(moneyballdata$TEAM_BASERUN_CS), 0, 1))
+moneyballdata$TEAM_BASERUN_CS[is.na(moneyballdata$TEAM_BASERUN_CS)] = median(moneyballdata$TEAM_BASERUN_CS, na.rm = TRUE)
+
+#Percentile Trimming of Caught Stealing
+b = moneyballdata$TEAM_BASERUN_CS
+Percentile_trim2 = function(b, lb, ub){
+  b[(b > quantile(b, lb)) & (b < quantile(b, ub))]
+}
+#New chart displaying trimmed version of histogram from the first data set of Caught Stealing
+hist(Percentile_trim2(b, 0.01, 0.99),col="red", xlab="Number of Stolen Bases", main= "Caught Stealing Bases")
+```
+
+## 7 First I defined the graph as a Bell-Shape Distribution, found the NA values, converted them to zero and then assigned the median value from the median double plays to those NA variables.  Then I created a:
+
+
+```{r, Double Plays}
+#Double Plays(Bell-Shape Distribution of Data)
+hist(moneyballdata$TEAM_FIELDING_DP, col="blue", xlab = "Number of Double Plays", main= "Total Double Plays", breaks=15)
+moneyballdata$FlagDoublePlays = as.factor(ifelse(is.na(moneyballdata$TEAM_FIELDING_DP), 0, 1))
+moneyballdata$TEAM_FIELDING_DP[is.na(moneyballdata$TEAM_FIELDING_DP)] = median(moneyballdata$TEAM_FIELDING_DP, na.rm = TRUE)
+
+```
+
+## 8 First I found the NA values, converted them to zero and then assigned the median value from the median Strikeouts by Pitchers to those NA variables and created another column(FlagStrikeoutsbyPitcher).  Then I created a percentile trimming function to group or bin together the outlier values and created another graph showing the update from the trimmed values.  The only issue is that the values were not group together as I originally planned and decided to leave the graph as is with some little modifications.  The Maximum strikeout however, is something that I would verify was inputted correctly with one of my team members:
+
+
+```{r, Strikeouts by Pitchers}
+#Strikeouts by Pitchers (Basic Plot with Outliers Highlighted)
+#plot(moneyballdata$TEAM_PITCHING_SO, col="black", xlab= "Strikeouts by Pitchers", main= "Total Strikeouts by Pitchers",
+#     ylab= "Strikeouts by Pitchers")
+moneyballdata$FlagStrikeoutsbyPitcher = as.factor(ifelse(is.na(moneyballdata$TEAM_PITCHING_SO), 0, 1))
+moneyballdata$TEAM_PITCHING_SO[is.na(moneyballdata$TEAM_PITCHING_SO)] = median(moneyballdata$TEAM_PITCHING_SO, na.rm = TRUE)
+
+c = moneyballdata$TEAM_PITCHING_SO
+Percentile_trim3 = function(c, lb, ub){
+  c[(c > quantile(c, lb)) & (c < quantile(c, ub))]
+}
+plot(moneyballdata$TEAM_PITCHING_SO, col="black", xlab= "Strikeouts by Pitchers", main= "Total Strikeouts by Pitchers",
+     ylab= "Strikeouts by Pitchers")
+abline(h=max(moneyballdata$TEAM_PITCHING_SO),col="red")
+
+text(x = 1000, y= (max(moneyballdata$TEAM_PITCHING_SO) - 1000), label = "Maximum Strikeout = 19278", col="red")
+
+
+```
+
+## 9 Now verify the summary is correct and write a new Excel file with the update columns and values
+
+```{r}
+#Verify summary has no more missing NA values and then create another Excel document with flags and messages
+summary(moneyballdata)
+
+
+# Rewriting data to a new file (as corrected)
+write.csv(moneyballdata, file = "moneyballdata_update.csv")
+
+```
+
+
+
+## Summary of Results and Method:
+I tried to analyze the data using previous methods that I learned but think about the context of what you, as a manager, would like to convey to our client, while reviewing my charts.  One thing that I focused on was trying to minimize the the errors in the outliers from using quantile and trimming functions for a histogram without eliminating any data.  I didn't graph the other columns as they did not have any perceived issues within the Excel file but I would like to see how many wins and losses each team had and compare that with some of the values I have above.  The main objective was to correct for missing values and outliers however, I wanted to also show you the before and after results to see if this is aligning with our companies goals for the current client.  In the end, I would love to integrate additional data into this Excel sheet and cross examine how many typical players were on the teams during the 135 years (1871-2006) and figure out if the wins and losses of those games had any bearing on the data I analyzed today.  Thank you for reading this over and I look forward to your remarks and thoughts.
+
+
