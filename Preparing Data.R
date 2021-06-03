@@ -11,21 +11,21 @@ library(ggplot2)
 library(lattice)
 
 #Create all numerical categories for the following dataset below:
-moneyballdata$TEAM_BATTING_H = as.numeric(moneyballdata$TEAM_BATTING_H)#OKAY
-moneyballdata$TEAM_BATTING_2B = as.numeric(moneyballdata$TEAM_BATTING_2B)#OKAY
-moneyballdata$TEAM_BATTING_3B = as.numeric(moneyballdata$TEAM_BATTING_3B)#OKAY
-moneyballdata$TEAM_BATTING_HR = as.numeric(moneyballdata$TEAM_BATTING_HR)#OKAY
-moneyballdata$TEAM_BATTING_BB = as.numeric(moneyballdata$TEAM_BATTING_BB)#OKAY
-moneyballdata$TEAM_BATTING_HBP = as.numeric(moneyballdata$TEAM_BATTING_HBP)#FIX POSITIVE IMPACT
-moneyballdata$TEAM_BATTING_SO = as.numeric(moneyballdata$TEAM_BATTING_SO)#FIX NEGATIVE IMPACT
-moneyballdata$TEAM_BASERUN_SB = as.numeric(moneyballdata$TEAM_BASERUN_SB)#FIX POSITIVE IMPACT
-moneyballdata$TEAM_BASERUN_CS = as.numeric(moneyballdata$TEAM_BASERUN_CS)#FIX NEGATIVE IMPACT
-moneyballdata$TEAM_FIELDING_E = as.numeric(moneyballdata$TEAM_FIELDING_E)#OKAY
-moneyballdata$TEAM_FIELDING_DP = as.numeric(moneyballdata$TEAM_FIELDING_DP)#FIX POSITIVE IMPACT
-moneyballdata$TEAM_PITCHING_BB = as.numeric(moneyballdata$TEAM_PITCHING_BB)#OKAY
-moneyballdata$TEAM_PITCHING_H = as.numeric(moneyballdata$TEAM_PITCHING_H)#OKAY
-moneyballdata$TEAM_PITCHING_HR = as.numeric(moneyballdata$TEAM_PITCHING_HR)#OKAY
-moneyballdata$TEAM_PITCHING_SO = as.numeric(moneyballdata$TEAM_PITCHING_SO)#FIX POSITIVE IMPACT
+moneyballdata$TEAM_BATTING_H = as.numeric(moneyballdata$TEAM_BATTING_H)
+moneyballdata$TEAM_BATTING_2B = as.numeric(moneyballdata$TEAM_BATTING_2B)
+moneyballdata$TEAM_BATTING_3B = as.numeric(moneyballdata$TEAM_BATTING_3B)
+moneyballdata$TEAM_BATTING_HR = as.numeric(moneyballdata$TEAM_BATTING_HR)
+moneyballdata$TEAM_BATTING_BB = as.numeric(moneyballdata$TEAM_BATTING_BB)
+moneyballdata$TEAM_BATTING_HBP = as.numeric(moneyballdata$TEAM_BATTING_HBP)
+moneyballdata$TEAM_BATTING_SO = as.numeric(moneyballdata$TEAM_BATTING_SO)
+moneyballdata$TEAM_BASERUN_SB = as.numeric(moneyballdata$TEAM_BASERUN_SB)
+moneyballdata$TEAM_BASERUN_CS = as.numeric(moneyballdata$TEAM_BASERUN_CS)
+moneyballdata$TEAM_FIELDING_E = as.numeric(moneyballdata$TEAM_FIELDING_E)
+moneyballdata$TEAM_FIELDING_DP = as.numeric(moneyballdata$TEAM_FIELDING_DP)
+moneyballdata$TEAM_PITCHING_BB = as.numeric(moneyballdata$TEAM_PITCHING_BB)
+moneyballdata$TEAM_PITCHING_H = as.numeric(moneyballdata$TEAM_PITCHING_H)
+moneyballdata$TEAM_PITCHING_HR = as.numeric(moneyballdata$TEAM_PITCHING_HR)
+moneyballdata$TEAM_PITCHING_SO = as.numeric(moneyballdata$TEAM_PITCHING_SO)
 
 
 #Verify the data frame is built correctly based on logical statements above and then view a brief summary
@@ -123,11 +123,6 @@ summary(moneyballdata)
 
 # Rewriting data to a new file (as corrected)
 write.csv(moneyballdata, file = "moneyballdata_update.csv")
-
-
-#General Question: When we are defining the qualitative and quantitative values, could we also assume some of the numerical values could be
-#inferred as categorical values?  An example would for TEAM_BASERUN_CS (Caught stealing) would be a decision based if the play was
-#caught or not caught
 
 
 
