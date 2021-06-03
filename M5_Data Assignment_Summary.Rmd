@@ -1,0 +1,361 @@
+---
+title: "M5_Data Assignment"
+author: "Melvin Wayne Abraham"
+date: "2/14/2021"
+output: pdf_document
+---
+### Objective: 
+"On the training data set, clean the data, build logistic classification models (i.e., with the response variable that is binary—at least three, but more may be necessary), and select a champion model to apply to your test data set.
+
+Download and use the following data sets for this assignment:
+
+Logit Insurance: Training
+Logit Insurance: TestPreview the document
+Logit Insurance: RandomPreview the document"
+
+## 1 Setup and Deliverables
+
+```{r}
+#Clean Rstudio Environment & Plots, Add libraries & Import data from Excel
+rm(list = ls())
+graphics.off()
+
+# Note, some of these libraries are not needed for this template code.
+library(readr)
+library(dplyr)
+library(zoo)
+library(psych)
+library(ROCR)
+library(corrplot)
+library(car)
+library(InformationValue)
+library(pbkrtest)
+library(car)
+library(leaps)
+library(MASS)
+library(corrplot)
+library(glm2)
+library(aod)
+library(caret)
+
+# Data Import and Variable Type Changes
+setwd(
+  "C:/Users/Melvin/Documents/William and Mary/Courses/Spring 2021/BUAD 5122 Machine Learning I/Module 5")
+data <- read.csv("buad5122-m5-insurance-training.csv")
+test <- read.csv("buad5122-m5-insurance-test.csv")
+```
+
+## 2 Need to make sure our data is understood correctly by R, since we have a mix of numerical and categorical:
+
+```{r Creating values for dataframes}
+data$INDEX <- as.factor(data$INDEX)
+data$TARGET_FLAG <- as.factor(data$TARGET_FLAG)
+data$SEX <- as.factor(data$SEX)
+data$EDUCATION <- as.factor(data$EDUCATION)
+data$PARENT1 <- as.factor(data$PARENT1)
+data$INCOME <- suppressWarnings(as.numeric(gsub("[^0-9.]", "", data$INCOME)))
+
+data$HOME_VAL <- suppressWarnings(as.numeric(gsub("[^0-9.]", "", data$HOME_VAL)))
+data$MSTATUS <- as.factor(data$MSTATUS)
+data$REVOKED <- as.factor(data$REVOKED)
+data$RED_CAR <- as.factor(ifelse(data$RED_CAR=="yes", 1, 0))
+data$URBANICITY <- ifelse(data$URBANICITY == "Highly Urban/ Urban", "Urban", "Rural")
+data$URBANICITY <- as.factor(data$URBANICITY)
+data$JOB <- as.factor(data$JOB)
+data$CAR_USE <- as.factor(data$CAR_USE)
+data$CAR_TYPE <- as.factor(data$CAR_TYPE)
+data$DO_KIDS_DRIVE <- as.factor(ifelse(data$KIDSDRIV > 0, 1, 0 ))
+data$OLDCLAIM <- suppressWarnings(as.numeric(gsub("[^0-9.]", "", data$HOME_VAL)))
+data$BLUEBOOK <- suppressWarnings(as.numeric(gsub("[^0-9.]", "", data$BLUEBOOK)))
+summary(data)
+
+######## Same treatment on test data set ###########################
+
+### Need to make sure our data is understood correctly by R,
+#since we have a mix of numerical and categorical
+test$INDEX <- as.factor(test$INDEX)
+test$TARGET_FLAG <- as.factor(test$TARGET_FLAG)
+test$SEX <- as.factor(test$SEX)
+test$EDUCATION <- as.factor(test$EDUCATION)
+test$PARENT1 <- as.factor(test$PARENT1)
+test$INCOME <- suppressWarnings(as.numeric(gsub("[^0-9.]", "", test$INCOME)))
+test$HOME_VAL <- suppressWarnings(as.numeric(gsub("[^0-9.]", "", test$HOME_VAL)))
+test$MSTATUS <- as.factor(test$MSTATUS)
+test$REVOKED <- as.factor(test$REVOKED)
+test$RED_CAR <- as.factor(ifelse(test$RED_CAR=="yes", 1, 0))
+test$URBANICITY <- ifelse(test$URBANICITY == "Highly Urban/ Urban", "Urban", "Rural")
+test$URBANICITY <- as.factor(test$URBANICITY)
+test$JOB <- as.factor(test$JOB)
+test$CAR_USE <- as.factor(test$CAR_USE)
+test$CAR_TYPE <- as.factor(test$CAR_TYPE)
+test$DO_KIDS_DRIVE <- as.factor(ifelse(test$KIDSDRIV > 0, 1, 0 ))
+test$OLDCLAIM <- suppressWarnings(as.numeric(gsub("[^0-9.]", "", test$HOME_VAL)))
+test$BLUEBOOK <- suppressWarnings(as.numeric(gsub("[^0-9.]", "", test$BLUEBOOK)))
+summary(test)
+
+```
+
+
+## 3: Data Exploration
+
+```{r, }
+# Histograms for Numeric Variables
+par(mfrow=c(2,2))
+hist(data$AGE, col = "red", xlab = "Age", main = "AGE Hist")
+data0<- subset(data, TARGET_FLAG == 1 )
+boxplot(data$AGE, col = "red", main = "AGE BoxPlot")
+par(mfrow=c(1,1))
+
+par(mfrow=c(2,2))
+hist(sqrt(data$TRAVTIME), col = "green", xlab = "SQRT TRAVTIME", main = "SQRT TRAVTIME Hist")
+hist(data$YOJ, col = "blue", xlab = "YOJ", main = "YOJ Hist")
+boxplot(sqrt(data$TRAVTIME), col = "green", main = "SQRT TRAVTIME BoxPlot")
+boxplot(data$YOJ, col = "blue", main = "YOJ BoxPlot")
+par(mfrow=c(1,1))
+
+par(mfrow=c(2,2))
+hist(sqrt(data$BLUEBOOK), col = "green", xlab = "SQRT BLUEBOOK", main = "SQRT BLUEBOOK Hist")
+hist((data$TIF), col = "blue", xlab = "TIF", main = "TIF Hist")
+boxplot(sqrt(data$BLUEBOOK), col = "green", main = "SQRT BLUEBOOK BoxPlot")
+boxplot(data$TIF, col = "blue", main = "TIF BoxPlot")
+par(mfrow=c(1,1))
+
+par(mfrow=c(2,2))
+hist(data$MVR_PTS, col = "red", xlab = "MVR_PTS", main = "MVR_PTS Hist")
+hist(data$CAR_AGE, col = "blue", xlab = "CAR_AGE", main = "CAR_AGE Hist")
+boxplot(data$MVR_PTS, col = "red", main = "MVR_PTS BoxPlot")
+boxplot(data$CAR_AGE, col = "blue", xlab = "CAR_AGE", main = "CAR_AGE BoxPlot")
+par(mfrow=c(1,1))
+
+```
+
+## 4: Data Transformation
+
+
+```{r, }
+
+# Fix NA's, note car age
+data$AGE[is.na(data$AGE)] <- mean(data$AGE, na.rm = TRUE)
+data$YOJ <- na.aggregate(data$YOJ, data$JOB, mean, na.rm = TRUE)
+data$INCOME <- na.aggregate(data$INCOME, data$JOB, mean, na.rm = TRUE)
+data$HOME_VAL <- na.aggregate(data$HOME_VAL, data$JOB, mean, na.rm = TRUE )
+data$CAR_AGE <- na.aggregate(data$CAR_AGE, data$CAR_TYPE, mean, na.rm = TRUE)
+data$CAR_AGE[data$CAR_AGE < 0 ] <- 0 
+data$OLDCLAIM <- ifelse(data$CAR_AGE < 5 & !is.na(data$CAR_AGE),0,data$OLDCLAIM)
+data$OLDCLAIM <- na.aggregate(data$OLDCLAIM, data$CAR_AGE, mean, na.rm = TRUE )
+data$HOME_OWNER <- ifelse(data$HOME_VAL == 0, 0, 1)
+data$SQRT_TRAVTIME <- sqrt(data$TRAVTIME)
+data$SQRT_BLUEBOOK <- sqrt(data$BLUEBOOK)
+
+# Bin Income
+data$INCOME_bin[is.na(data$INCOME)] <- "NA"
+data$INCOME_bin[data$INCOME == 0] <- "Zero"
+data$INCOME_bin[data$INCOME >= 1 & data$INCOME < 12500] <- "Low"
+data$INCOME_bin[data$INCOME >= 12500 & data$INCOME < 70000] <- "Medium"
+data$INCOME_bin[data$INCOME >= 70000] <- "High"
+data$INCOME_bin <- factor(data$INCOME_bin)
+data$INCOME_bin <- factor(data$INCOME_bin, levels=c("NA","Zero","Low","Medium","High"))
+
+test$AGE[is.na(test$AGE)] <- mean(test$AGE, na.rm = "TRUE")
+test$YOJ <- na.aggregate(test$YOJ, test$JOB, mean, na.rm = TRUE)
+test$INCOME <- na.aggregate(test$INCOME, test$JOB, mean, na.rm = TRUE)
+test$HOME_VAL <- na.aggregate(test$HOME_VAL, test$JOB, mean, na.rm = TRUE )
+test$CAR_AGE <- na.aggregate(test$CAR_AGE, test$CAR_TYPE, mean, na.rm = TRUE)
+test$CAR_AGE[test$CAR_AGE < 0 ] <- 0 
+test$OLDCLAIM <- ifelse(test$CAR_AGE < 11 & !is.na(test$CAR_AGE),0,test$OLDCLAIM)
+test$OLDCLAIM <- na.aggregate(test$OLDCLAIM, test$CAR_AGE, mean, na.rm = TRUE )
+test$HOME_OWNER <- ifelse(test$HOME_VAL == 0, 0, 1)
+test$SQRT_TRAVTIME <- sqrt(test$TRAVTIME)
+test$SQRT_BLUEBOOK <- sqrt(test$BLUEBOOK)
+
+# Bin Income
+test$INCOME_bin[is.na(test$INCOME)] <- "NA"
+test$INCOME_bin[test$INCOME == 0] <- "Zero"
+test$INCOME_bin[test$INCOME >= 1 & test$INCOME < 12500] <- "Low"
+test$INCOME_bin[test$INCOME >= 12500 & test$INCOME < 70000] <- "Medium"
+test$INCOME_bin[test$INCOME >= 70000] <- "High"
+test$INCOME_bin <- factor(test$INCOME_bin)
+test$INCOME_bin <- factor(test$INCOME_bin, levels=c("NA","Zero","Low","Medium","High"))
+
+summary(data)
+summary(test)
+
+numeric <- subset(data, select = c(AGE, HOMEKIDS, YOJ, INCOME, HOME_VAL, TRAVTIME, BLUEBOOK, TIF,
+                                   CLM_FREQ, MVR_PTS, CAR_AGE), na.rm = TRUE)
+summary(numeric)
+c <- cor(numeric)
+corrplot(c, method = "square")
+
+```
+
+## 5 Create flags on dataset for additional analysis before model creation:
+
+
+```{r, Flags for additional analysis}
+
+data$FlagHasChildren = as.factor(ifelse(data$PARENT1 == "Yes", 1, 0))
+data$FlagMarriage = as.factor(ifelse(data$MSTATUS == "Yes", 1, 0))
+data$FlagLocation = as.factor(ifelse(data$URBANICITY == "Rural", 1, 0))
+data$FlagCarUsage = as.factor(ifelse(data$CAR_USE == "Private", 1, 0))
+data$FlagSex = as.factor(ifelse(data$SEX == "z_F", 1, 0))
+
+data$FlagHighIncome = as.factor(ifelse(data$INCOME_bin == "High", 1, 0))
+data$FlagNoHomeValue = as.factor(ifelse(data$HOME_VAL == "0", 1, 0))
+data$FlagAgeOver60 = as.factor(ifelse(data$AGE > 60, 1, 0))
+data$FlagAgeUnder30 = as.factor(ifelse(data$AGE < 30, 1, 0))
+
+data$FlagYearsOnJob = as.factor(ifelse(data$YOJ < 5, 1, 0))
+
+data$FlagEducation = as.factor(ifelse(data$EDUCATION == "z_Highschool", 1, 0))
+
+data$FlagDoctorJob = as.factor(ifelse(data$JOB == "Doctor", 1, 0))
+data$FlagProfessionalJob = as.factor(ifelse(data$JOB == "Professional", 1, 0))
+
+data$FlagTimeInForce = as.factor(ifelse(data$TIF < 4, 1, 0))
+
+data$FlagOldClaims = as.factor(ifelse(data$OLDCLAIM > 20000, 1, 0))
+
+##### Test Dataset #######
+
+test$FlagHasChildren = as.factor(ifelse(test$PARENT1 == "Yes", 1, 0))
+test$FlagMarriage = as.factor(ifelse(test$MSTATUS == "Yes", 1, 0))
+test$FlagLocation = as.factor(ifelse(test$URBANICITY == "Rural", 1, 0))
+test$FlagCarUsage = as.factor(ifelse(test$CAR_USE == "Private", 1, 0))
+test$FlagSex = as.factor(ifelse(test$SEX == "z_F", 1, 0))
+
+test$FlagHighIncome = as.factor(ifelse(test$INCOME_bin == "High", 1, 0))
+test$FlagNoHomeValue = as.factor(ifelse(test$HOME_VAL == "0", 1, 0))
+test$FlagAgeOver60 = as.factor(ifelse(test$AGE > 60, 1, 0))
+test$FlagAgeUnder30 = as.factor(ifelse(test$AGE < 30, 1, 0))
+
+test$FlagYearsOnJob = as.factor(ifelse(test$YOJ < 5, 1, 0))
+
+test$FlagEducation = as.factor(ifelse(test$EDUCATION == "z_Highschool", 1, 0))
+
+test$FlagDoctorJob = as.factor(ifelse(test$JOB == "Doctor", 1, 0))
+test$FlagProfessionalJob = as.factor(ifelse(test$JOB == "Professional", 1, 0))
+
+test$FlagTimeInForce = as.factor(ifelse(test$TIF < 4, 1, 0))
+
+test$FlagOldClaims = as.factor(ifelse(test$OLDCLAIM > 20000, 1, 0))
+
+```
+
+## 6: Model Development
+
+
+```{r, Model Development for TARGET_FLAG}
+
+#Model 1
+#Married with kids in a Rural Location
+Model1 <- glm(TARGET_FLAG ~ AGE + BLUEBOOK + TRAVTIME + KIDSDRIV + SEX + URBANICITY + 
+                HOMEKIDS + CLM_FREQ + REVOKED + MVR_PTS + CAR_AGE + TIF + EDUCATION +
+                FlagMarriage + FlagHasChildren + RED_CAR - FlagLocation + CAR_TYPE + YOJ +
+                JOB + INCOME_bin + HOME_VAL, data = data, family = binomial())
+summary(Model1)
+data$Model1Prediction <- predict(Model1, type = "response")
+
+#Model 2
+#Not married with kids in a Rural Location
+Model2 <- glm(TARGET_FLAG ~ AGE + BLUEBOOK + TRAVTIME - KIDSDRIV + FlagCarUsage - SEX +
+                FlagLocation + CLM_FREQ + REVOKED + MVR_PTS + TIF + EDUCATION + MSTATUS +
+                PARENT1 + CAR_USE + CAR_TYPE + YOJ + JOB + HOME_VAL + FlagMarriage -
+                FlagHasChildren - FlagHighIncome - FlagNoHomeValue + FlagAgeOver60 +
+                FlagAgeUnder30 - FlagYearsOnJob, data = data, family = binomial())
+summary(Model2)
+data$Model2Prediction <- predict(Model2, type = "response")
+
+#Model 3
+Model3 <- glm(TARGET_FLAG ~ SQRT_TRAVTIME + SQRT_BLUEBOOK + DO_KIDS_DRIVE + URBANICITY +
+                CLM_FREQ + REVOKED + MVR_PTS + TIF + MSTATUS + PARENT1 + CAR_USE + CAR_TYPE + JOB + 
+                HOME_OWNER + FlagHighIncome + FlagAgeUnder30 - FlagSex + FlagDoctorJob - FlagLocation,
+              data = data, family = binomial())
+summary(Model3)
+data$Model3Prediction <- predict(Model3, type = "response")
+
+
+#Create two new models with example ideas.  These values are significantly higher AIC but I was unsure if that
+#is what we needed to focus on for this assignment.
+
+#Model 4
+#A married female driving her private car with kids in a rural location
+Model4 <- glm(TARGET_FLAG ~ FlagSex + FlagCarUsage + FlagLocation + FlagMarriage + FlagHasChildren,
+              data = data, family = binomial())
+summary(Model4)
+data$Model4Prediction <- predict(Model4, type = "response")
+
+
+#Model 5
+
+#A kid with income driving to and from work in an urban city
+Model5 = glm(TARGET_FLAG ~ KIDSDRIV + INCOME + HOME_VAL + TRAVTIME,
+             data = data, family = "binomial"(link = "logit"))
+summary(Model5)
+data$Model5Prediction <- predict(Model5, type = "response")
+```
+
+## 7: Model Selection
+
+
+```{r, Choose the best Model}
+
+AIC(Model1)
+BIC(Model1)
+AIC(Model2)
+BIC(Model2)
+AIC(Model3)
+BIC(Model3)
+AIC(Model4)
+BIC(Model4)
+AIC(Model5)
+BIC(Model5)
+
+print(-2*logLik(Model1, REML = TRUE))
+print(-2*logLik(Model2, REML = TRUE))
+print(-2*logLik(Model3, REML = TRUE))
+print(-2*logLik(Model4, REML = TRUE))
+print(-2*logLik(Model5, REML = TRUE))
+ks_stat(actuals=data$TARGET_FLAG, predictedScores=data$Model1Prediction)
+ks_stat(actuals=data$TARGET_FLAG, predictedScores=data$Model2Prediction)
+ks_stat(actuals=data$TARGET_FLAG, predictedScores=data$Model3Prediction)
+ks_stat(actuals=data$TARGET_FLAG, predictedScores=data$Model4Prediction)
+ks_stat(actuals=data$TARGET_FLAG, predictedScores=data$Model5Prediction)
+
+# We'll choose Model 3, here are its coefficients
+coef(Model3)
+
+# Setting threshold value to be 0.5
+data$Model3Prediction <- ifelse(data$Model3Prediction > 0.5,1,0)
+data$Model3Prediction <- as.factor(data$Model3Prediction)
+confusionMatrix(data$Model3Prediction, data$TARGET_FLAG)
+
+par(mfrow=c(2,2))
+plot(Model3)
+
+```
+
+## 8:  Score Lowest Model on Test Data set and output csv file
+
+
+```{r, Scoring Model}
+# Again, double-checking to make sure we don't have any NA's in our Test Data Set
+summary(test)
+
+#STAND ALONE SCORING PROGRAM
+##### Model coefficients used to create P_TARGET_FLAG
+test$P_TARGET_FLAG <- predict(Model3, newdata = test, type = "response")
+
+# Setting threshold value to be 0.5
+test$P_TARGET_FLAG <- ifelse(test$P_TARGET_FLAG > 0.5,1,0)
+
+#Prediction File 
+prediction <- test[c("INDEX","P_TARGET_FLAG")]
+write.csv(prediction, file = "lowest_AIC2.csv")
+
+
+```
+
+
+## 9: Summary of Results and Method
+When we are designing models for others to interpret, we must understand how the inputs and the outputs effect the overall model by creating various “ideal” situations.  I create 5 different scenarios based on searching the insurance industry and finding trends among drivers and applying that logical thinking to the dataset.  My model 5 had a very high AIC value but the accuracy of the model was .7342 or 73% which mean a person could have a 27% chance of error so I decided to go with Model 3 which had an accuracy of .7917 or 79%.  I did notice that a married female driving her private car with kids in a rural location will yield a high AIC value and sets a baseline of how to analyze the dataset based on the information provided in the data dictionary.  The reason why I choose Model 3 is because it had the lowest AIC value and it would be a robust fit if we were given additional drivers later in the future to analyze.  The interesting thing I’m finally starting to see is that as we analyze these different sets of data, it doesn’t necessarily matter what it is but we must understand what we are comparing and how the different factors are intertwined.  By making an overfitted model first and then continually describing the factors involved, it becomes a more common model that an industry can use to analyze the various datasets they have within their company.  In the future, I would like to explore the data differently each time with a fresh set of eyes because even though my AIC was a better value this time around, I think I can go lower if I factor in the liability of each driver based on their education and previous accidents.
+
